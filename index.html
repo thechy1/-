@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>班级座位随机系统</title>
+    <style>
+        :root {
+            --seat-size: 45px;
+            --unified-gap: 10px;
+            --block-margin: 40px; 
+        }
+
+        body { 
+            font-family: 'Microsoft YaHei', sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .top-space { height: 80px; }
+
+        /* 教室主容器 */
+        .classroom {
+            display: flex;
+            flex-direction: row-reverse; 
+            gap: var(--block-margin);
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            align-items: end; 
+        }
+
+        .area { 
+            display: grid; 
+            gap: var(--unified-gap); 
+        }
+
+        .grid-2x6 { grid-template-columns: repeat(2, var(--seat-size)); }
+        .grid-3x5 { grid-template-columns: repeat(3, var(--seat-size)); }
+
+        .seat {
+            width: var(--seat-size);
+            height: var(--seat-size);
+            background-color: #fff;
+            border: 2px solid #3498db;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #2c3e50;
+            /* 添加过渡动画，让出现更平滑 */
+            transition: opacity 0.3s ease;
+        }
+
+        /* 底部教学区 */
+        .teaching-zone {
+            width: 100%;
+            max-width: 900px;
+            margin-top: 50px;
+            display: grid;
+            grid-template-columns: 150px 1fr 150px; 
+            align-items: center;
+            padding-bottom: 40px;
+        }
+
+        .teacher-desk {
+            height: 60px;
+            background-color: #e67e22;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .whiteboard {
+            height: 15px;
+            background-color: #bdc3c7;
+            margin: 0 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #333;
+            border: 2px solid #7f8c8d;
+        }
+
+        button {
+            margin: 20px 0;
+            padding: 12px 30px;
+            font-size: 16px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #27ae60;
+            outline: none;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #27ae60; }
+    </style>
+</head>
+<body>
+
+    <div class="top-space"></div>
+
+    <button onclick="handleShuffle()">点击随机排列座位</button>
+
+    <div class="classroom">
+        <div class="area grid-2x6" id="area1"></div>
+        <div class="area grid-2x6" id="area2"></div>
+        <div class="area grid-3x5" id="area3"></div>
+        <div class="area grid-2x6" id="area4"></div>
+    </div>
+
+    <div class="teaching-zone">
+        <div class="teacher-desk">老师座位</div>
+        <div class="whiteboard">白 板</div>
+        <div></div>
+    </div>
+
+    <script>
+        const config = [
+            { id: 'area1', count: 12 },
+            { id: 'area2', count: 12 },
+            { id: 'area3', count: 15 },
+            { id: 'area4', count: 12 }
+        ];
+
+        // 初始化：先创建空白座位
+        function initSeats() {
+            config.forEach(block => {
+                const el = document.getElementById(block.id);
+                el.innerHTML = '';
+                for (let i = 0; i < block.count; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'seat';
+                    el.appendChild(div);
+                }
+            });
+        }
+
+        function handleShuffle() {
+            // 1. 先清空所有号码，并让座位稍微透明
+            const allSeats = document.querySelectorAll('.seat');
+            allSeats.forEach(s => {
+                s.innerText = '';
+                s.style.opacity = '0.3';
+            });
+
+            // 2. 延迟一小会儿（200ms）再填入新号码，制造出“刷新”的感觉
+            setTimeout(() => {
+                let nums = Array.from({length: 51}, (_, i) => i + 1);
+                for (let i = nums.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [nums[i], nums[j]] = [nums[j], nums[i]];
+                }
+
+                let index = 0;
+                allSeats.forEach(s => {
+                    s.innerText = nums[index++];
+                    s.style.opacity = '1';
+                });
+            }, 200);
+        }
+
+        // 页面加载后初始化
+        initSeats();
+    </script>
+</body>
+</html>
