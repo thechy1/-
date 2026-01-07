@@ -2,118 +2,154 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>班级座位随机系统</title>
+    <title>班级座位系统</title>
     <style>
         :root {
-            --seat-size: 45px;
-            --unified-gap: 10px;
-            --block-margin: 40px; 
+            --seat-size: 60px;
+            --unified-gap: 12px;
+            --block-margin: 60px;
         }
 
         body { 
             font-family: 'Microsoft YaHei', sans-serif; 
-            background-color: #f0f2f5; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            margin: 0;
-            min-height: 100vh;
+            background-color: #0f0f1a;
+            color: white;
+            display: flex; flex-direction: column; align-items: center; 
+            margin: 0; min-height: 100vh; overflow: hidden; 
         }
 
-        .top-space { height: 80px; }
+        .top-space { height: 40px; }
 
-        /* 教室主容器 */
         .classroom {
             display: flex;
             flex-direction: row-reverse; 
             gap: var(--block-margin);
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            align-items: end; 
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            align-items: flex-start;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
-        .area { 
-            display: grid; 
-            gap: var(--unified-gap); 
-        }
-
+        .area { display: grid; gap: var(--unified-gap); }
         .grid-2x6 { grid-template-columns: repeat(2, var(--seat-size)); }
-        .grid-3x5 { grid-template-columns: repeat(3, var(--seat-size)); }
+        .grid-3x5 { 
+            grid-template-columns: repeat(3, var(--seat-size)); 
+            margin-top: calc(var(--seat-size) + var(--unified-gap)); 
+        }
 
         .seat {
-            width: var(--seat-size);
-            height: var(--seat-size);
-            background-color: #fff;
-            border: 2px solid #3498db;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #2c3e50;
-            /* 添加过渡动画，让出现更平滑 */
-            transition: opacity 0.3s ease;
+            width: var(--seat-size); height: var(--seat-size);
+            border: 2px solid rgba(52, 152, 219, 0.2);
+            border-radius: 8px; background: rgba(0, 0, 0, 0.2);
+            box-sizing: border-box;
         }
 
-        /* 底部教学区 */
+                /* ====== 超级闪耀特殊座位 ====== */
+        .special-seat {
+            position: relative;
+            border: 3px solid #ffd700 !important;
+            background: radial-gradient(circle at center,
+                rgba(255, 215, 0, 0.35),
+                rgba(0, 0, 0, 0.2)
+            );
+            box-shadow:
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 40px rgba(255, 215, 0, 0.4),
+                inset 0 0 15px rgba(255, 255, 255, 0.4);
+            animation: godSeatPulse 1.6s infinite alternate;
+        }
+
+        /* 外圈能量环 */
+        .special-seat::before {
+            content: "";
+            position: absolute;
+            inset: -8px;
+            border-radius: 12px;
+            border: 2px dashed rgba(255, 215, 0, 0.7);
+            animation: rotateRing 4s linear infinite;
+        }
+
+        /* 内部闪光 */
+        .special-seat::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 6px;
+            background: radial-gradient(circle,
+                rgba(255,255,255,0.6),
+                transparent 70%
+            );
+            animation: flashInner 1.2s infinite;
+        }
+
+        @keyframes godSeatPulse {
+            0% {
+                box-shadow:
+                    0 0 15px rgba(255, 215, 0, 0.4),
+                    0 0 30px rgba(255, 215, 0, 0.2);
+            }
+            100% {
+                box-shadow:
+                    0 0 35px rgba(255, 215, 0, 0.9),
+                    0 0 70px rgba(255, 215, 0, 0.6);
+            }
+        }
+
+        @keyframes rotateRing {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes flashInner {
+            0%,100% { opacity: 0.3; }
+            50% { opacity: 0.9; }
+        }
+
+
+        /* 粒子样式 */
+        .particle {
+            position: absolute;
+            left: 0; top: 0;
+            width: var(--seat-size); height: var(--seat-size);
+            /* 初始状态：圆形，蓝紫渐变 */
+            background: linear-gradient(135deg, #3498db, #8e44ad);
+            color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.3rem; z-index: 1000;
+            opacity: 0; /* 初始隐藏 */
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.6);
+            will-change: transform;
+            /* 重要：移除 CSS transition，完全由 JS 接管 */
+            pointer-events: none;
+        }
+
         .teaching-zone {
-            width: 100%;
-            max-width: 900px;
-            margin-top: 50px;
-            display: grid;
-            grid-template-columns: 150px 1fr 150px; 
-            align-items: center;
-            padding-bottom: 40px;
+            width: 100%; max-width: 1000px; margin-top: 40px;
+            display: grid; grid-template-columns: 180px 1fr 180px; align-items: center;
         }
-
-        .teacher-desk {
-            height: 60px;
-            background-color: #e67e22;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .whiteboard {
-            height: 15px;
-            background-color: #bdc3c7;
-            margin: 0 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #333;
-            border: 2px solid #7f8c8d;
-        }
+        .teacher-desk { height: 70px; background: #d35400; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 0 #a04000; }
+        .whiteboard { height: 8px; background: #bdc3c7; margin: 0 60px; border-radius: 4px; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
 
         button {
-            margin: 20px 0;
-            padding: 12px 30px;
-            font-size: 16px;
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #27ae60;
-            outline: none;
+            margin: 20px 0; padding: 15px 50px; font-size: 20px; letter-spacing: 2px;
+            background: linear-gradient(to right, #2ecc71, #27ae60); 
+            color: white; border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+            transition: transform 0.1s;
+            z-index: 2000;
         }
-        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #27ae60; }
+        button:active { transform: scale(0.95); }
+        button:disabled { filter: grayscale(1); cursor: default; }
     </style>
 </head>
 <body>
 
     <div class="top-space"></div>
+    <button id="btn" onclick="startShuffle()">启动螺旋路径</button>
 
-    <button onclick="handleShuffle()">点击随机排列座位</button>
-
-    <div class="classroom">
+    <div class="classroom" id="classroom">
         <div class="area grid-2x6" id="area1"></div>
         <div class="area grid-2x6" id="area2"></div>
         <div class="area grid-3x5" id="area3"></div>
@@ -122,57 +158,169 @@
 
     <div class="teaching-zone">
         <div class="teacher-desk">老师座位</div>
-        <div class="whiteboard">白 板</div>
-        <div></div>
+        <div class="whiteboard"></div>
     </div>
 
     <script>
         const config = [
-            { id: 'area1', count: 12 },
-            { id: 'area2', count: 12 },
-            { id: 'area3', count: 15 },
-            { id: 'area4', count: 12 }
+            { id: 'area1', c: 2, r: 6, startCol: 8 }, 
+            { id: 'area2', c: 2, r: 6, startCol: 6 },
+            { id: 'area3', c: 3, r: 5, startCol: 3 }, 
+            { id: 'area4', c: 2, r: 6, startCol: 1 }
         ];
 
-        // 初始化：先创建空白座位
-        function initSeats() {
+        let seatInfo = [];
+        let particles = [];
+
+        function init() {
+            seatInfo = [];
             config.forEach(block => {
                 const el = document.getElementById(block.id);
-                el.innerHTML = '';
-                for (let i = 0; i < block.count; i++) {
-                    const div = document.createElement('div');
-                    div.className = 'seat';
-                    el.appendChild(div);
+                for (let r = 0; r < block.r; r++) {
+                    for (let c = 0; c < block.c; c++) {
+                        const seat = document.createElement('div');
+                        seat.className = 'seat';
+                        const logicalRow = block.r - r; 
+                        const logicalCol = block.startCol + (block.c - 1 - c);
+                        if (logicalRow === 1 && logicalCol === 3) seat.classList.add('special-seat');
+                        el.appendChild(seat);
+                        seatInfo.push({ el: seat, row: logicalRow, col: logicalCol, index: seatInfo.length });
+                    }
+                }
+            });
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            for (let i = 1; i <= 51; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.innerText = i;
+                document.body.appendChild(p);
+                particles.push(p);
+                // 初始放置在中心
+                p.style.transform = `translate(${centerX}px, ${centerY}px)`;
+            }
+        }
+
+        function getValidShuffle() {
+            let nums = new Array(51).fill(0);
+            let attempts = 0;
+            while (attempts < 5000) {
+                nums.fill(0);
+                const pos21 = pick(seatInfo.filter(s => s.row !== 1));
+                nums[pos21.index] = 21;
+                const pos32 = pick(seatInfo.filter(s => [3,4,5,6,7].includes(s.col) && !(s.row === 1 && s.col === 3) && nums[s.index] === 0));
+                nums[pos32.index] = 32;
+                let others = Array.from({length: 51}, (_, i) => i + 1).filter(n => n !== 21 && n !== 32).sort(() => Math.random() - 0.5);
+                let oIdx = 0;
+                for (let i = 0; i < 51; i++) if (nums[i] === 0) nums[i] = others[oIdx++];
+                const s14 = seatInfo[nums.indexOf(14)], s45 = seatInfo[nums.indexOf(45)];
+                if (s14.row === s45.row && Math.abs(s14.col - s45.col) === 1) { attempts++; continue; }
+                return nums;
+            }
+            return nums;
+        }
+
+        function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        // --- 核心：JS 驱动的螺旋动画函数 ---
+        function animateParticleSpiral(p, targetX, targetY, delay) {
+            const duration = 15000; // 动画时长 1.5秒
+            const startRadius = 1200; // 起始螺旋半径（屏幕外）
+            // 设定旋转圈数：3圈 (3 * 2 * PI)
+            // 每个粒子增加一点相位偏移 (i*0.1)，让它们的螺旋轨迹错开，更好看
+            const phaseOffset = parseInt(p.innerText) * 0.1;
+            const totalRotation = Math.PI * 2 * 4; 
+
+            let startTime = null;
+
+            // 重置粒子状态
+            p.style.opacity = '0';
+            p.style.background = 'linear-gradient(135deg, #3498db, #8e44ad)';
+            p.style.borderRadius = '50%';
+            p.style.color = 'white';
+
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                // 计算当前进度 (0 到 1)
+                let progress = (timestamp - startTime - delay) / duration;
+
+                if (progress < 0) {
+                    // 还没到延迟时间，继续等待
+                    requestAnimationFrame(step);
+                    return;
+                }
+
+                p.style.opacity = '1';
+
+                if (progress > 1) progress = 1; // 确保不超过终点
+
+                // 使用缓动函数让结尾变慢 (ease-out)
+                const easeProgress = 1 - Math.pow(1 - progress, 1.6);
+
+                // --- 螺旋路径计算核心 ---
+                // 半径从大到小： startRadius -> 0
+                const currentRadius = startRadius * (1 - easeProgress);
+                // 角度从大到小： totalRotation -> 0
+                const currentAngle = totalRotation * (1 - easeProgress) + phaseOffset;
+
+                // 计算相对于目标点的偏移量 (极坐标转直角坐标)
+                const offsetX = currentRadius * Math.cos(currentAngle);
+                const offsetY = currentRadius * Math.sin(currentAngle);
+
+                // 最终坐标 = 目标坐标 + 螺旋偏移量
+                const x = targetX + offsetX;
+                const y = targetY + offsetY;
+
+                // 应用位移。注意：没有 rotate()，所以本体不转！
+                p.style.transform = `translate(${x}px, ${y}px)`;
+
+                // 接近终点时改变样式（变方、变白）
+                if (progress > 0.85) {
+                    p.style.background = '#fff';
+                    p.style.color = '#1a1a2e';
+                    p.style.borderRadius = '8px';
+                    // 加一个简单的过渡让样式变化平滑点
+                    p.style.transition = 'background 0.3s, border-radius 0.3s, color 0.3s'; 
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(step); // 继续下一帧
+                }
+            }
+            requestAnimationFrame(step); // 启动动画循环
+        }
+
+
+        let isAnimating = false;
+        function startShuffle() {
+            if (isAnimating) return;
+            isAnimating = true;
+            document.getElementById('btn').disabled = true;
+
+            const finalNums = getValidShuffle();
+            
+            particles.forEach((p, i) => {
+                const num = parseInt(p.innerText);
+                const targetIdx = finalNums.indexOf(num);
+                const rect = seatInfo[targetIdx].el.getBoundingClientRect();
+                const targetX = rect.left + window.scrollX;
+                const targetY = rect.top + window.scrollY;
+
+                // 调用 JS 动画函数，传入错开的延迟时间
+                animateParticleSpiral(p, targetX, targetY, i * 40);
+
+                if (i === particles.length - 1) {
+                    // 最末一个动画结束后的总时长估算：延迟 + 动画时长
+                    setTimeout(() => {
+                        isAnimating = false;
+                        document.getElementById('btn').disabled = false;
+                    }, 41 * 80 + 15000 + 200);
                 }
             });
         }
-
-        function handleShuffle() {
-            // 1. 先清空所有号码，并让座位稍微透明
-            const allSeats = document.querySelectorAll('.seat');
-            allSeats.forEach(s => {
-                s.innerText = '';
-                s.style.opacity = '0.3';
-            });
-
-            // 2. 延迟一小会儿（200ms）再填入新号码，制造出“刷新”的感觉
-            setTimeout(() => {
-                let nums = Array.from({length: 51}, (_, i) => i + 1);
-                for (let i = nums.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [nums[i], nums[j]] = [nums[j], nums[i]];
-                }
-
-                let index = 0;
-                allSeats.forEach(s => {
-                    s.innerText = nums[index++];
-                    s.style.opacity = '1';
-                });
-            }, 200);
-        }
-
-        // 页面加载后初始化
-        initSeats();
+        
+        init();
     </script>
 </body>
 </html>
