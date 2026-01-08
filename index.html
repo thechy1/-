@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    
     <meta charset="UTF-8">
     <title>班级座位系统</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a2e'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='STKaiti, KaiTi, serif' font-size='80' fill='%23ffd700'>仁</text></svg>">
     <style>
         :root {
             --seat-size: 60px;
@@ -41,60 +43,73 @@
 
         .seat {
             width: var(--seat-size); height: var(--seat-size);
-            border: 2px solid rgba(52, 152, 219, 0.2);
+            border: 2px solid rgba(190, 224, 247, 0.719);
             border-radius: 8px; background: rgba(0, 0, 0, 0.2);
             box-sizing: border-box;
         }
 
                 /* ====== 超级闪耀特殊座位 ====== */
-        .special-seat {
+       .special-seat {
             position: relative;
             border: 3px solid #ffd700 !important;
-            background: radial-gradient(circle at center,
-                rgba(255, 215, 0, 0.35),
-                rgba(0, 0, 0, 0.2)
-            );
-            box-shadow:
-                0 0 20px rgba(255, 215, 0, 0.6),
-                0 0 40px rgba(255, 215, 0, 0.4),
-                inset 0 0 15px rgba(255, 255, 255, 0.4);
-            animation: godSeatPulse 1.6s infinite alternate;
+            background: #000 !important; /* 深黑底色衬托特效 */
+            box-shadow: 
+                0 0 20px #ffd700,
+                0 0 40px #ffae00,
+                inset 0 0 20px #ffd700;
+            animation: godSeatPulse 1s infinite alternate cubic-bezier(0.4, 0, 0.6, 1);
+            overflow: visible;
         }
 
-        /* 外圈能量环 */
+        /* 1. 动态流光边框（能量环） */
         .special-seat::before {
             content: "";
             position: absolute;
-            inset: -8px;
-            border-radius: 12px;
-            border: 2px dashed rgba(255, 215, 0, 0.7);
-            animation: rotateRing 4s linear infinite;
+            inset: -12px;
+            border-radius: 14px;
+            padding: 3px;
+            background: conic-gradient(from 0deg, transparent, #ffd700, #fff, #ffd700, transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: rotateRing 2s linear infinite;
         }
 
-        /* 内部闪光 */
+        /* 2. 核心扩散冲击波（光晕） */
         .special-seat::after {
             content: "";
             position: absolute;
-            inset: 4px;
-            border-radius: 6px;
-            background: radial-gradient(circle,
-                rgba(255,255,255,0.6),
-                transparent 70%
-            );
-            animation: flashInner 1.2s infinite;
+            inset: 0;
+            background: #ffd700;
+            border-radius: 8px;
+            z-index: -1;
+            animation: shockwave 2s infinite;
         }
 
+        /* 3. 增加一个内部动态扫描线效果 */
+        .special-seat-inner {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            border-radius: 6px;
+        }
+        .special-seat-inner::before {
+            content: "";
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent, rgba(255,255,255,0.8), transparent);
+            animation: scanLine 2s linear infinite;
+        }
+
+        /* --- 动画加强 --- */
+
         @keyframes godSeatPulse {
-            0% {
-                box-shadow:
-                    0 0 15px rgba(255, 215, 0, 0.4),
-                    0 0 30px rgba(255, 215, 0, 0.2);
-            }
-            100% {
-                box-shadow:
-                    0 0 35px rgba(255, 215, 0, 0.9),
-                    0 0 70px rgba(255, 215, 0, 0.6);
-            }
+            0% { transform: scale(1); filter: brightness(1); }
+            100% { transform: scale(1.05); filter: brightness(1.5); }
         }
 
         @keyframes rotateRing {
@@ -102,10 +117,17 @@
             to { transform: rotate(360deg); }
         }
 
-        @keyframes flashInner {
-            0%,100% { opacity: 0.3; }
-            50% { opacity: 0.9; }
+        @keyframes shockwave {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(2.5); opacity: 0; }
         }
+
+        @keyframes scanLine {
+            0% { top: -100%; }
+            100% { top: 100%; }
+        }
+
+
 
 
         /* 粒子样式 */
@@ -147,7 +169,7 @@
 <body>
 
     <div class="top-space"></div>
-    <button id="btn" onclick="startShuffle()">启动螺旋路径</button>
+    <button id="btn" onclick="startShuffle()">座位安排</button>
 
     <div class="classroom" id="classroom">
         <div class="area grid-2x6" id="area1"></div>
@@ -182,7 +204,14 @@
                         seat.className = 'seat';
                         const logicalRow = block.r - r; 
                         const logicalCol = block.startCol + (block.c - 1 - c);
-                        if (logicalRow === 1 && logicalCol === 3) seat.classList.add('special-seat');
+                        // 在 init 函数里找到这一段：
+                        if (logicalRow === 1 && logicalCol === 3) {
+                            seat.classList.add('special-seat');
+                            // 添加这一行：增加一个内部容器来承载扫描线
+                            const inner = document.createElement('div');
+                            inner.className = 'special-seat-inner';
+                            seat.appendChild(inner);
+                        }
                         el.appendChild(seat);
                         seatInfo.push({ el: seat, row: logicalRow, col: logicalCol, index: seatInfo.length });
                     }
@@ -225,12 +254,14 @@
 
         // --- 核心：JS 驱动的螺旋动画函数 ---
         function animateParticleSpiral(p, targetX, targetY, delay) {
-            const duration = 15000; // 动画时长 1.5秒
+            const baseDuration = 3000;      // 基础时长
+            const randomOffset = Math.random() * 7000; // 0 ~ 1000ms
+            const duration = baseDuration + randomOffset;
             const startRadius = 1200; // 起始螺旋半径（屏幕外）
             // 设定旋转圈数：3圈 (3 * 2 * PI)
             // 每个粒子增加一点相位偏移 (i*0.1)，让它们的螺旋轨迹错开，更好看
             const phaseOffset = parseInt(p.innerText) * 0.1;
-            const totalRotation = Math.PI * 2 * 4; 
+            const totalRotation = Math.PI * 2 * (1 + Math.random() * 2); 
 
             let startTime = null;
 
@@ -256,7 +287,7 @@
                 if (progress > 1) progress = 1; // 确保不超过终点
 
                 // 使用缓动函数让结尾变慢 (ease-out)
-                const easeProgress = 1 - Math.pow(1 - progress, 1.6);
+                const easeProgress = 1 - Math.pow(1 - progress, 1.4);
 
                 // --- 螺旋路径计算核心 ---
                 // 半径从大到小： startRadius -> 0
@@ -315,7 +346,7 @@
                     setTimeout(() => {
                         isAnimating = false;
                         document.getElementById('btn').disabled = false;
-                    }, 41 * 80 + 15000 + 200);
+                    }, 41 * 80 + 10000 + 200);
                 }
             });
         }
