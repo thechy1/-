@@ -52,57 +52,40 @@
        .special-seat {
             position: relative;
             border: 3px solid #ffd700 !important;
-            background: #000 !important; /* 深黑底色衬托特效 */
+            background: rgba(0, 0, 0, 0.2)!important; /* 核心洁白发亮 */
+            /* 模拟太阳的多层柔光晕 */
             box-shadow: 
-                0 0 20px #ffd700,
-                0 0 40px #ffae00,
-                inset 0 0 20px #ffd700;
-            animation: godSeatPulse 1s infinite alternate cubic-bezier(0.4, 0, 0.6, 1);
-            overflow: visible;
+                0 0 15px #ffd700,
+                0 0 30px #ffcc00,
+                0 0 60px rgba(255, 204, 0, 0.4);
+            animation: sunGlow 2s infinite alternate ease-in-out;
         }
 
-        /* 1. 动态流光边框（能量环） */
+        /* 太阳散发出的外围光晕 */
         .special-seat::before {
             content: "";
             position: absolute;
-            inset: -12px;
-            border-radius: 14px;
-            padding: 3px;
-            background: conic-gradient(from 0deg, transparent, #ffd700, #fff, #ffd700, transparent);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            animation: rotateRing 2s linear infinite;
-        }
-
-        /* 2. 核心扩散冲击波（光晕） */
-        .special-seat::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: #ffd700;
-            border-radius: 8px;
+            inset: -15px; /* 光晕向外扩散 */
+            border-radius: 50%; /* 圆形光晕更有太阳感 */
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
             z-index: -1;
-            animation: shockwave 2s infinite;
+            animation: pulseHalo 3s infinite;
         }
 
-        /* 3. 增加一个内部动态扫描线效果 */
-        .special-seat-inner {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
-            border-radius: 6px;
+        @keyframes sunGlow {
+            0% { 
+                box-shadow: 0 0 15px #ffd700, 0 0 30px #ffcc00, 0 0 50px rgba(255, 204, 0, 0.4);
+                transform: scale(1);
+            }
+            100% { 
+                box-shadow: 0 0 25px #ffd700, 0 0 50px #ffcc00, 0 0 90px rgba(255, 204, 0, 0.6);
+                transform: scale(1.03);
+            }
         }
-        .special-seat-inner::before {
-            content: "";
-            position: absolute;
-            top: -100%;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(transparent, rgba(255,255,255,0.8), transparent);
-            animation: scanLine 2s linear infinite;
+
+        @keyframes pulseHalo {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.4); opacity: 0.8; }
         }
 
         /* --- 动画加强 --- */
@@ -254,8 +237,8 @@
 
         // --- 核心：JS 驱动的螺旋动画函数 ---
         function animateParticleSpiral(p, targetX, targetY, delay) {
-            const baseDuration = 3000;      // 基础时长
-            const randomOffset = Math.random() * 7000; // 0 ~ 1000ms
+            const baseDuration = 4000;      // 基础时长
+            const randomOffset = Math.random() * 8000; // 0 ~ 1000ms
             const duration = baseDuration + randomOffset;
             const startRadius = 1200; // 起始螺旋半径（屏幕外）
             // 设定旋转圈数：3圈 (3 * 2 * PI)
@@ -346,7 +329,7 @@
                     setTimeout(() => {
                         isAnimating = false;
                         document.getElementById('btn').disabled = false;
-                    }, 41 * 80 + 10000 + 200);
+                    }, 41 * 80 + 12000 + 200);
                 }
             });
         }
@@ -355,3 +338,5 @@
     </script>
 </body>
 </html>
+</html>
+
