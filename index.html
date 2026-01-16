@@ -219,7 +219,7 @@
             let attempts = 0;
             while (attempts < 5000) {
                 nums.fill(0);
-                let others = Array.from({length: 51}, (_, i) => i + 1).filter(n > 0).sort(() => Math.random() - 0.5);
+                let others = Array.from({length: 51}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
                 let oIdx = 0;
                 for (let i = 0; i < 51; i++) if (nums[i] === 0) nums[i] = others[oIdx++];
                 return nums;
@@ -333,4 +333,5 @@
 </body>
 </html>
 </html>
+
 
