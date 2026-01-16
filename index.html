@@ -219,15 +219,9 @@
             let attempts = 0;
             while (attempts < 5000) {
                 nums.fill(0);
-                const pos21 = pick(seatInfo.filter(s => s.row !== 1));
-                nums[pos21.index] = 21;
-                const pos32 = pick(seatInfo.filter(s => [3,4,5,6,7].includes(s.col) && !(s.row === 1 && s.col === 3) && nums[s.index] === 0));
-                nums[pos32.index] = 32;
-                let others = Array.from({length: 51}, (_, i) => i + 1).filter(n => n !== 21 && n !== 32).sort(() => Math.random() - 0.5);
+                let others = Array.from({length: 51}, (_, i) => i + 1).filter(n > 0).sort(() => Math.random() - 0.5);
                 let oIdx = 0;
                 for (let i = 0; i < 51; i++) if (nums[i] === 0) nums[i] = others[oIdx++];
-                const s14 = seatInfo[nums.indexOf(14)], s45 = seatInfo[nums.indexOf(45)];
-                if (s14.row === s45.row && Math.abs(s14.col - s45.col) === 1) { attempts++; continue; }
                 return nums;
             }
             return nums;
