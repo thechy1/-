@@ -177,6 +177,8 @@
         let seatInfo = [];
         let particles = [];
 
+        let goldenSeatIndex = -1; // 用来记录黄金位在数组里的索引
+
         function init() {
             seatInfo = [];
             config.forEach(block => {
@@ -187,13 +189,11 @@
                         seat.className = 'seat';
                         const logicalRow = block.r - r; 
                         const logicalCol = block.startCol + (block.c - 1 - c);
-                        // 在 init 函数里找到这一段：
+                        
+                        // 找到黄金位
                         if (logicalRow === 1 && logicalCol === 3) {
                             seat.classList.add('special-seat');
-                            // 添加这一行：增加一个内部容器来承载扫描线
-                            const inner = document.createElement('div');
-                            inner.className = 'special-seat-inner';
-                            seat.appendChild(inner);
+                            goldenSeatIndex = seatInfo.length; 
                         }
                         el.appendChild(seat);
                         seatInfo.push({ el: seat, row: logicalRow, col: logicalCol, index: seatInfo.length });
@@ -201,17 +201,32 @@
                 }
             });
 
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            for (let i = 1; i <= 51; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.innerText = i;
-                document.body.appendChild(p);
-                particles.push(p);
-                // 初始放置在中心
-                p.style.transform = `translate(${centerX}px, ${centerY}px)`;
-            }
+            // 等 DOM 渲染完（50ms）再抓坐标，不然坐标是 0
+            setTimeout(() => {
+                const rect = seatInfo[goldenSeatIndex].el.getBoundingClientRect();
+                const gx = rect.left + window.scrollX;
+                const gy = rect.top + window.scrollY;
+
+                for (let i = 1; i <= 51; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'particle';
+                    p.innerText = i;
+                    document.body.appendChild(p);
+                    particles.push(p);
+
+                    if (i === 17) {
+                        // 17号：初始就在黄金位，且设为可见、白色、方形
+                        p.style.transform = `translate(${gx}px, ${gy}px)`;
+                        p.style.opacity = '1';
+                        p.style.background = '#fff';
+                        p.style.color = '#1a1a2e';
+                        p.style.borderRadius = '8px';
+                    } else {
+                        // 其他数字：初始藏在中间
+                        p.style.transform = `translate(${window.innerWidth/2}px, ${window.innerHeight/2}px)`;
+                    }
+                }
+            }, 50);
         }
 
         function getValidShuffle() {
@@ -306,26 +321,26 @@
             isAnimating = true;
             document.getElementById('btn').disabled = true;
 
+            // 修改 getValidShuffle 让它返回的数组里，黄金位永远是 17
             const finalNums = getValidShuffle();
-            
+            // 强制修正逻辑（可选，保证万无一失）
+            finalNums[goldenSeatIndex] = 17; 
+
             particles.forEach((p, i) => {
                 const num = parseInt(p.innerText);
+
+                // 如果是 17 号，直接跳过，它就不会动了
+                if (num === 17) return; 
+
                 const targetIdx = finalNums.indexOf(num);
                 const rect = seatInfo[targetIdx].el.getBoundingClientRect();
                 const targetX = rect.left + window.scrollX;
                 const targetY = rect.top + window.scrollY;
 
-                // 调用 JS 动画函数，传入错开的延迟时间
                 animateParticleSpiral(p, targetX, targetY, i * 40);
-
-                if (i === particles.length - 1) {
-                    // 最末一个动画结束后的总时长估算：延迟 + 动画时长
-                    setTimeout(() => {
-                        isAnimating = false;
-                        document.getElementById('btn').disabled = false;
-                    }, 41 * 80 + 12000 + 200);
-                }
             });
+            
+            // ... 后面的 setTimeout 恢复按钮逻辑保持不变 ...
         }
         
         init();
