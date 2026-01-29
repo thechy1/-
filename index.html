@@ -230,34 +230,69 @@
         }
 
         let isAnimating = false;
-        function startShuffle() {
-            if (isAnimating) return;
-            isAnimating = true;
-            document.getElementById('btn').disabled = true;
+        // --- 核心逻辑：洗牌并检查所有特定规则 ---
+        function getValidShuffle() {
+            let nums = new Array(51).fill(0);
+            let attempts = 0;
 
-            const finalNums = getValidShuffle();
-            
-            particles.forEach((p, i) => {
-                const num = parseInt(p.innerText);
-                // 修复点：先获取 num，再判断是否是 17
-                if (num === 17) return; 
+            while (attempts < 20000) {
+                attempts++;
+                nums.fill(0);
 
-                const targetIdx = finalNums.indexOf(num);
-                const rect = seatInfo[targetIdx].el.getBoundingClientRect();
-                const targetX = rect.left + window.scrollX;
-                const targetY = rect.top + window.scrollY;
+                // 1. 获取所有可用座位的索引参考
+                const allIndices = Array.from({length: 51}, (_, i) => i);
+                
+                // 2. 首先安置 17 号 (黄金位)
+                nums[goldenSeatIndex] = 17;
 
-                animateParticleSpiral(p, targetX, targetY, i * 40);
-            });
+                // 3. 筛选 21 号可坐的位置 (排除所有 row === 1 的位置)
+                const candidate21 = allIndices.filter(i => i !== goldenSeatIndex && seatInfo[i].row !== 1);
+                const pos21 = candidate21[Math.floor(Math.random() * candidate21.length)];
+                nums[pos21] = 21;
 
-            setTimeout(() => {
-                isAnimating = false;
-                document.getElementById('btn').disabled = false;
-            }, 8000); // 这里的 8000 是保守估计的动画结束时间
+                // 4. 筛选 32 号可坐的位置 (限定 col 在 3,4,5,6,7 之间)
+                const candidate32 = allIndices.filter(i => 
+                    nums[i] === 0 && // 没被占用
+                    [3, 4, 5, 6, 7].includes(seatInfo[i].col)
+                );
+                
+                if (candidate32.length === 0) continue; // 如果没位置了重来
+                const pos32 = candidate32[Math.floor(Math.random() * candidate32.length)];
+                nums[pos32] = 32;
+
+                // 5. 填充剩余数字
+                let fixedNums = [17, 21, 32];
+                let others = Array.from({length: 51}, (_, i) => i + 1)
+                                  .filter(n => !fixedNums.includes(n))
+                                  .sort(() => Math.random() - 0.5);
+                
+                let oIdx = 0;
+                for (let i = 0; i < 51; i++) {
+                    if (nums[i] === 0) nums[i] = others[oIdx++];
+                }
+
+                // 6. 最后一道防线：检查 14 和 45 是否相邻
+                if (checkNoAdjacent(nums, 14, 45)) {
+                    console.log(`安排成功！尝试次数：${attempts}`);
+                    return nums;
+                }
+            }
+            console.error("无法找到符合条件的排列");
+            return nums;
+        }
+
+        function checkNoAdjacent(nums, a, b) {
+            const idxA = nums.indexOf(a);
+            const idxB = nums.indexOf(b);
+            const s1 = seatInfo[idxA];
+            const s2 = seatInfo[idxB];
+            const dist = Math.abs(s1.row - s2.row) + Math.abs(s1.col - s2.col);
+            return dist > 1; 
         }
         
         init();
     </script>
 </body>
 </html>
+
 
