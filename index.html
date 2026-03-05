@@ -48,17 +48,11 @@
         }
 
         .special-seat {
-            position: relative;
-            border: 3px solid #ffd700 !important;
-            box-shadow: 0 0 15px #ffd700, 0 0 30px rgba(255, 204, 0, 0.4);
-            animation: sunGlow 2s infinite alternate ease-in-out;
+            width: var(--seat-size); height: var(--seat-size);
+            border: 2px solid rgba(190, 224, 247, 0.719);
+            border-radius: 8px; background: rgba(0, 0, 0, 0.2);
+            box-sizing: border-box;
         }
-
-        @keyframes sunGlow {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.03); }
-        }
-
         .particle {
             position: absolute;
             left: 0; top: 0;
@@ -137,7 +131,7 @@
                         const logicalRow = block.r - r; 
                         const logicalCol = block.startCol + (block.c - 1 - c);
                         
-                        if (logicalRow === 1 && logicalCol === 3) {
+                        if (logicalRow === 1 && logicalCol === 2) {
                             seat.classList.add('special-seat');
                             goldenSeatIndex = seatInfo.length; 
                         }
@@ -274,14 +268,14 @@
             // 批量处理
             let index = 0;
             while(index < students.length) {
-                const batchSize = 2 + Math.floor(Math.random() * 4); // 每次2-3个
+                const batchSize = 2 + Math.floor(Math.random() * 5); // 每次2-3个
                 const batch = students.slice(index, index + batchSize);
                 
                 // 并行执行这一批的动画
                 const promises = batch.map(num => animateSequence(num, finalNums));
                 
                 // 等待一小会儿再放下一批 (错峰出行)
-                await delay(1500); 
+                await delay(2500); 
                 index += batchSize;
             }
 
@@ -343,7 +337,7 @@
                 // 执行直角移动 (Move L-shape)
                 // 随机决定先X还是先Y
                 const xFirst = Math.random() > 0.5;
-                const speed = 300; // 单轴耗时 ms
+                const speed = 500; // 单轴耗时 ms
 
                 // 开启 transition 用于位移
                 p.style.transition = `transform ${speed}ms linear`; // 使用 linear 更有机械感
@@ -376,7 +370,7 @@
                     // 稍微变小一点表示停顿
                     p.style.transition = `transform 0.3s ease-out`;
                     p.style.transform = `translate(${curX}px, ${curY}px) scale(0.9)`;
-                    await delay(1.500);
+                    await delay(3.500);
                 }
             }
 
