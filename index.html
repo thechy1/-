@@ -119,8 +119,8 @@
             stagger: 50               // 组入场延迟
         };
 
-        const fixedAssignments = { 17: { r: 6, c: 1 }, 13: { r: 6, c: 5 }, 15: { r: 6, c: 9 } };
-        const avoidRestrictions = { 21: { avoidR: [6], avoidC: [] }, 32: { avoidR: [], avoidC: [1, 2, 8, 9] } };
+        const fixedAssignments = { 17: { r: 6, c: 1 }, 13: { r: 6, c: 5 }};
+        const avoidRestrictions = { 21: { avoidR: [6], avoidC: [] }, 32: { avoidR: [], avoidC: [1, 2, 8, 9] } , 15: { avoidR: [1,2,3], avoidC: [] } , 47: { avoidR: [4,5,6], avoidC: [] } , 1: { avoidR: [1,2,3], avoidC: [] }};
         const socialConstraints = [{ ids: [14, 45], minDist: 2 }];
 
         const config = [
