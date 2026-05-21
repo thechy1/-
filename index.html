@@ -177,20 +177,47 @@
         function getValidShuffle() {
             let nums = new Array(seatInfo.length).fill(0);
             let used = new Set();
+
+            // 1. 先安置固定座位
             for (let id in fixedAssignments) {
                 const s = fixedAssignments[id], idx = findSeatIdx(s.r, s.c);
                 if (idx !== -1) { nums[idx] = parseInt(id); used.add(parseInt(id)); }
             }
+
+            // 2. 安置其他学生（加入避让逻辑）
             let others = [];
             for (let i = 1; i <= 51; i++) if (!used.has(i)) others.push(i);
             others.sort(() => Math.random() - 0.5);
+
             for (let id of others) {
-                let av = [];
-                for(let i=0; i<nums.length; i++) if(nums[i] === 0) av.push(i);
-                nums[av[0]] = id;
+                let possibleIndices = [];
+                for (let i = 0; i < seatInfo.length; i++) {
+                    if (nums[i] !== 0) continue; // 座位已占用
+
+                    // 检查避让限制
+                    if (avoidRestrictions[id]) {
+                        const res = avoidRestrictions[id];
+                        // 如果避让行包含当前座位行，或者避让列包含当前座位列，则跳过
+                        if (res.avoidR.includes(seatInfo[i].r) || res.avoidC.includes(seatInfo[i].c)) {
+                            continue;
+                        }
+                    }
+                    possibleIndices.push(i);
+                }
+
+                // 如果有合规座位，随机选一个；如果没有合规座位（极端情况），就随便找个空位
+                if (possibleIndices.length > 0) {
+                    const randomIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
+                    nums[randomIdx] = id;
+                } else {
+                    // 强制回退：随便塞进一个剩余空位
+                    let fallback = nums.findIndex(n => n === 0);
+                    nums[fallback] = id;
+                }
             }
             return nums;
         }
+
 
         // --- 普通星系动画 ---
         async function runPlanetaryAnimation(batch, finalLayout) {
