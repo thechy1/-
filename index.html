@@ -87,6 +87,7 @@
             font-weight: bold; font-size: 1.2rem;
             box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
             will-change: transform;
+            transition: background 0.3s, color 0.3s, border-radius 0.3s;
         }
     </style>
 </head>
@@ -108,23 +109,16 @@
     <div id="particle-container"></div>
 
     <script>
-        // --- 参数调整区 ---
-        const PARAMS = {
-            planetDuration: 2800,      // 普通行星飞行时间
-            galaxyDuration: 5000,      // 银河团飞行时间 (更慢)
-            orbitRadius: 110,          // 普通组绕转半径
-            innerRadius: 90,           // 银河内层半径
-            outerRadius: 170,          // 银河外层半径
-            orbitSpeed: 0.003,         // 旋转速度系数
-            stagger: 50               // 组入场延迟
+        // 固定座位配置：添加 1号、17号、13号 的固定行列坐标
+        const fixedAssignments = {
+            17: { r: 6, c: 1 }, 
+            13: { r: 6, c: 5 }
         };
-
-        const fixedAssignments = {1: { r: 6, c: 2}, 17: { r: 6, c: 1 }, 13: { r: 6, c: 5 }};
-        const avoidRestrictions = {15: { avoidR: [1,2,3], avoidC: [] }};
+        const avoidRestrictions = {15: { avoidR: [1,2,3], avoidC: [] },21: { avoidR: [6], avoidC: [] },32: { avoidR: [], avoidC: [1,2,8,9] }};
         const socialConstraints = [{ ids: [14, 45], minDist: 2 }];
 
         const config = [
-            { id: 'area1', c: 2, r: 6, startCol: 1 } , 
+            { id: 'area1', c: 2, r: 6, startCol: 1 }, 
             { id: 'area2', c: 3, r: 5, startCol: 3 },
             { id: 'area3', c: 2, r: 6, startCol: 6 }, 
             { id: 'area4', c: 2, r: 6, startCol: 8 }
@@ -149,8 +143,11 @@
                         seat.className = 'seat';
                         const realR = (block.id === 'area2') ? r + 2 : r + 1;
                         const realC = block.startCol + c;
+                        
                         for (let id in fixedAssignments) {
-                            if (fixedAssignments[id].r === realR && fixedAssignments[id].c === realC) seat.classList.add('fixed-target');
+                            if (fixedAssignments[id].r === realR && fixedAssignments[id].c === realC) {
+                                seat.classList.add('fixed-target');
+                            }
                         }
                         el.appendChild(seat);
                         seatInfo.push({ el: seat, r: realR, c: realC });
@@ -158,23 +155,52 @@
                 }
             });
 
-            for (let i = 1; i <= 51; i++) {
+            // 预先渲染粒子：固定座位打开页面直接显示号码
+            const fixedIds = Object.keys(fixedAssignments).map(Number);
+            seatInfo.forEach((seat, idx) => {
                 const p = document.createElement('div');
-                p.className = 'particle'; p.innerText = i;
+                p.className = 'particle';
+                
+                // 查找该位置是否有固定绑定的学号
+                let matchFixedId = null;
+                for (let id in fixedAssignments) {
+                    if (fixedAssignments[id].r === seat.r && fixedAssignments[id].c === seat.c) {
+                        matchFixedId = id;
+                        break;
+                    }
+                }
+
+                if (matchFixedId !== null) {
+                    p.innerText = matchFixedId;
+                    p.style.background = '#fff';
+                    p.style.color = '#1a1a2e';
+                    p.style.borderRadius = '8px';
+                    p.style.border = 'none';
+                    p.style.boxShadow = 'none';
+                } else {
+                    p.innerText = '';
+                }
+
+                p.style.opacity = '1';
                 container.appendChild(p);
                 particles.push(p);
-                const startX = (window.innerWidth / 51) * (i - 1);
-                p.style.transform = `translate(${startX}px, ${window.innerHeight + 100}px)`;
-                if(fixedAssignments[i]) {
-                    const idx = findSeatIdx(fixedAssignments[i].r, fixedAssignments[i].c);
-                    const pos = getPos(idx);
-                    p.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
-                    p.style.borderRadius = '8px'; p.style.background = '#fff'; p.style.color = '#1a1a2e';
-                }
-            }
+
+                // 绑定位置
+                const pos = getPos(idx);
+                p.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+            });
         }
 
-                function getValidShuffle() {
+        // 标准的 Fisher-Yates 无偏洗牌算法
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function getValidShuffle() {
             let nums = new Array(seatInfo.length).fill(0);
             let used = new Set();
 
@@ -184,31 +210,30 @@
                 if (idx !== -1) { nums[idx] = parseInt(id); used.add(parseInt(id)); }
             }
 
-            // 2. 准备学生列表
+            // 2. 准备学生列表，使用 Fisher-Yates 进行绝对公正洗牌
             let others = [];
             for (let i = 1; i <= 51; i++) if (!used.has(i)) others.push(i);
-            others.sort(() => Math.random() - 0.5);
+            shuffleArray(others);
 
-            // 3. 分配座位并检查所有约束
+            // 3. 分配座位并检查约束
             for (let id of others) {
                 let possibleIndices = [];
                 for (let i = 0; i < seatInfo.length; i++) {
                     if (nums[i] !== 0) continue; 
 
-                    // --- 检查 A: 避让限制 (avoidRestrictions) ---
+                    // 检查 A: 避让限制
                     if (avoidRestrictions[id]) {
                         const res = avoidRestrictions[id];
                         if (res.avoidR.includes(seatInfo[i].r) || res.avoidC.includes(seatInfo[i].c)) continue;
                     }
 
-                    // --- 检查 B: 社交约束 (socialConstraints) ---
+                    // 检查 B: 社交约束
                     let isSocialConflict = false;
                     for (let con of socialConstraints) {
                         if (con.ids.includes(id)) {
                             const partnerId = con.ids.find(x => x !== id);
                             const partnerIdx = nums.indexOf(partnerId);
                             if (partnerIdx !== -1) {
-                                // 计算行列距离：如果距离 <= minDist，则冲突
                                 const rDist = Math.abs(seatInfo[i].r - seatInfo[partnerIdx].r);
                                 const cDist = Math.abs(seatInfo[i].c - seatInfo[partnerIdx].c);
                                 if (rDist === 0 && cDist <= con.minDist) isSocialConflict = true;
@@ -221,141 +246,64 @@
                 }
 
                 if (possibleIndices.length > 0) {
+                    // 随机挑选一个符合条件的空位
                     const randomIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
                     nums[randomIdx] = id;
                 } else {
-                    // 如果被限制卡死，强制寻找第一个空位
-                    let fallback = nums.findIndex(n => n === 0);
-                    nums[fallback] = id;
+                    // 兜底方案：随机选择任意空位（而不是固定找第一个空位）
+                    let emptyIndices = [];
+                    nums.forEach((val, idx) => { if (val === 0) emptyIndices.push(idx); });
+                    const fallbackIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+                    nums[fallbackIdx] = id;
                 }
             }
             return nums;
         }
 
+        // 独立粒子的滚动逻辑：只在未确定的学号池中随机抽取
+        // 改进后的滚动与就座逻辑
+function rollSeat(p, finalNum, totalDuration, getPool, onLock) {
+    return new Promise((resolve) => {
+        let elapsed = 0;
 
+        function step() {
+            let progress = elapsed / totalDuration;
 
-        // --- 普通星系动画 ---
-        async function runPlanetaryAnimation(batch, finalLayout) {
-            const leaderId = batch[0], satellites = batch.slice(1);
-            const leaderP = particles[leaderId - 1];
-            const leaderDest = getPos(finalLayout.indexOf(leaderId));
-            const satelliteDests = satellites.map(id => getPos(finalLayout.indexOf(id)));
-            
-            // 随机脱离时间点
-            const detachThresholds = satellites.map(() => 0.25 + Math.random() * 0.6);
+            // 1. 达到总时长，正式锁定就座样式
+            if (elapsed >= totalDuration) {
+                p.innerText = finalNum;
+                    p.style.background = '#fdfdfd';
+                    p.style.color = '#0f0f1a';
+                    p.style.borderRadius = '6px';
+                    onLock(finalNum); // 告知主流程：该号码已落锁
+                    resolve();
+                    return;
+            }
 
-            const startX = window.innerWidth / 2;
-            const startY = window.innerHeight + 150;
-            const startTime = performance.now();
+            // 2. 动态计算切换间隔（前 70% 保持 40ms 高速，后 30% 平滑减速至 280ms）
+            let interval = 120;
+            if (progress > 0.4) {
+                let slowEase = (progress - 0.5 * Math.random()); // 0 ~ 1
+                interval = 500 + (slowEase * slowEase * 2000);
+            }
 
-            return new Promise(resolve => {
-                function frame(now) {
-                    const elapsed = now - startTime;
-                    const progress = Math.min(elapsed / PARAMS.planetDuration, 1);
-                    const ease = 1 - Math.pow(1 - progress, 3);
+            // 3. 切换数字逻辑：减速后期（> 85%）提前停在目标数字上，避免瞬间跳转
+            const pool = getPool();
+            if (progress > 0.85) {
+                p.innerText = finalNum; // 提前显示目标学号，产生“刹车停靠”视觉
+            } else if (pool.length > 0) {
+                p.innerText = pool[Math.floor(Math.random() * pool.length)]; // 滚动未确定的学号
+            } else {
+                p.innerText = finalNum;
+            }
 
-                    const curX = startX + (leaderDest.x - startX) * ease;
-                    const curY = startY + (leaderDest.y - startY) * ease;
-                    leaderP.style.transform = `translate(${curX}px, ${curY}px)`;
-
-                    satellites.forEach((id, i) => {
-                        const p = particles[id - 1];
-                        const dest = satelliteDests[i];
-                        const orbitAngle = (now * PARAMS.orbitSpeed) + (i * (Math.PI * 2 / satellites.length));
-                        
-                        if (progress < detachThresholds[i]) {
-                            // 绕转阶段
-                            const sx = curX + Math.cos(orbitAngle) * PARAMS.orbitRadius;
-                            const sy = curY + Math.sin(orbitAngle) * PARAMS.orbitRadius;
-                            p.style.transform = `translate(${sx}px, ${sy}px)`;
-                        } else {
-                            // 收缩入座阶段 (按用户要求的逻辑)
-                            const innerProgress = (progress - detachThresholds[i]) / (1 - detachThresholds[i]);
-                            const collapseX = curX + Math.cos(orbitAngle) * PARAMS.orbitRadius * (1 - innerProgress);
-                            const collapseY = curY + Math.sin(orbitAngle) * PARAMS.orbitRadius * (1 - innerProgress);
-                            
-                            const fx = collapseX + (dest.x - collapseX) * innerProgress;
-                            const fy = collapseY + (dest.y - collapseY) * innerProgress;
-                            
-                            p.style.transform = `translate(${fx}px, ${fy}px)`;
-                            if (innerProgress > 0.9) {
-                                p.style.borderRadius = '8px'; p.style.background = '#fff'; p.style.color = '#1a1a2e';
-                            }
-                        }
-                    });
-
-                    if (progress < 1) requestAnimationFrame(frame);
-                    else {
-                        leaderP.style.borderRadius = '8px'; leaderP.style.background = '#fff'; leaderP.style.color = '#1a1a2e';
-                        resolve();
-                    }
-                }
-                requestAnimationFrame(frame);
-            });
+            elapsed += interval;
+            setTimeout(step, interval);
         }
 
-        // --- 单核双层大型银河动画 ---
-        async function runGalaxyAnimation(remainingIds, finalLayout) {
-            const leaderId = remainingIds.shift(); // 唯一行星
-            const satellites = remainingIds;
-            const leaderP = particles[leaderId - 1];
-            const leaderDest = getPos(finalLayout.indexOf(leaderId));
-            
-            const detachThresholds = satellites.map(() => 0.4 + Math.random() * 0.45);
-
-            const startX = window.innerWidth / 2;
-            const startY = window.innerHeight + 200;
-            const startTime = performance.now();
-
-            return new Promise(resolve => {
-                function frame(now) {
-                    const elapsed = now - startTime;
-                    const progress = Math.min(elapsed / PARAMS.galaxyDuration, 1);
-                    const ease = progress; // 匀速更平稳
-
-                    const curX = startX + (leaderDest.x - startX) * ease;
-                    const curY = startY + (leaderDest.y - startY) * ease;
-                    leaderP.style.transform = `translate(${curX}px, ${curY}px)`;
-
-                    satellites.forEach((id, index) => {
-                        const p = particles[id - 1];
-                        const dest = getPos(finalLayout.indexOf(id));
-                        
-                        // 分层逻辑
-                        const isInner = index < satellites.length / 2;
-                        const radius = isInner ? PARAMS.innerRadius : PARAMS.outerRadius;
-                        const speed = isInner ? PARAMS.orbitSpeed : -PARAMS.orbitSpeed * 0.7;
-                        const orbitAngle = (now * speed) + (index * 1.2);
-
-                        if (progress < detachThresholds[index]) {
-                            const sx = curX + Math.cos(orbitAngle) * radius;
-                            const sy = curY + Math.sin(orbitAngle) * radius;
-                            p.style.transform = `translate(${sx}px, ${sy}px)`;
-                        } else {
-                            // 收缩入座阶段
-                            const innerProgress = (progress - detachThresholds[index]) / (1 - detachThresholds[index]);
-                            const collapseX = curX + Math.cos(orbitAngle) * radius * (1 - innerProgress);
-                            const collapseY = curY + Math.sin(orbitAngle) * radius * (1 - innerProgress);
-                            
-                            const fx = collapseX + (dest.x - collapseX) * innerProgress;
-                            const fy = collapseY + (dest.y - collapseY) * innerProgress;
-                            
-                            p.style.transform = `translate(${fx}px, ${fy}px)`;
-                            if (innerProgress > 0.9) {
-                                p.style.borderRadius = '8px'; p.style.background = '#fff'; p.style.color = '#1a1a2e';
-                            }
-                        }
-                    });
-
-                    if (progress < 1) requestAnimationFrame(frame);
-                    else {
-                        leaderP.style.borderRadius = '8px'; leaderP.style.background = '#fff'; leaderP.style.color = '#1a1a2e';
-                        resolve();
-                    }
-                }
-                requestAnimationFrame(frame);
-            });
-        }
+        step();
+    });
+}
 
         async function startShuffle() {
             if (isAnimating) return;
@@ -364,19 +312,68 @@
 
             const finalLayout = getValidShuffle();
             const fixedIds = Object.keys(fixedAssignments).map(Number);
-            let pool = Array.from({length: 51}, (_, i) => i + 1).filter(id => !fixedIds.includes(id)).sort(() => Math.random() - 0.5);
 
-            // 分批入场：每批5人
-            while(pool.length > 15) {
-                const batch = pool.splice(0, 3 + Math.random() * 5); 
-                runPlanetaryAnimation(batch, finalLayout);
-                await new Promise(r => setTimeout(r, 1300));
+            // 1. 建立未确认学号的初始候选池
+            let unconfirmedPool = finalLayout.filter(id => !fixedIds.includes(id));
+
+            // 2. 重置非固定位的状态为待抽号问号
+            seatInfo.forEach((seat, idx) => {
+                const p = particles[idx];
+                const assignedId = finalLayout[idx];
+                const pos = getPos(idx);
+                p.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+
+                if (!fixedIds.includes(assignedId)) {
+                    p.innerText = '';
+                    p.style.background = 'linear-gradient(135deg, #3498db, #8e44ad)';
+                    p.style.color = '#fff';
+                    p.style.border = 'none';
+                    p.style.borderRadius = '50%';
+                    p.style.boxShadow = '0 0 15px rgba(52, 152, 219, 0.5)';
+                }
+            });
+
+            await new Promise(r => setTimeout(r, 400));
+
+            // 3. 计算从 (5, 3) 扩散的顺序
+            const seatOrder = seatInfo
+                .map((_, index) => ({ index }))
+                .sort(() => Math.random() - 0.5);
+
+            // 4. 并发波浪式启动：从中心依次向外启动滚动
+            const rollPromises = [];
+
+            for (let i = 0; i < seatOrder.length; i++) {
+                const seatIdx = seatOrder[i].index;
+                const targetId = finalLayout[seatIdx];
+
+                // 跳过固定位
+                if (fixedIds.includes(targetId)) continue;
+
+                // 随机持续 3200ms ~ 4000ms 的缓慢变慢过程
+                const duration = 4000 + Math.random() * 3000; 
+
+                // 启动当前格子的滚动（不 await，直接并发）
+                const pPromise = rollSeat(
+                    particles[seatIdx],
+                    targetId,
+                    duration,
+                    () => unconfirmedPool,
+                    (lockedNum) => {
+                        // 某个座位确定后，从候选池剔除该学号
+                        const pIdx = unconfirmedPool.indexOf(lockedNum);
+                        if (pIdx > -1) unconfirmedPool.splice(pIdx, 1);
+                    }
+                );
+
+                rollPromises.push(pPromise);
+
+                // 间隔 100 毫秒启动下一个格子，产生从中心向外扩散的波浪视觉
+                await new Promise(r => setTimeout(r, 1000));
             }
 
-            // 最后一波大集合
-            if(pool.length > 0) {
-                await runGalaxyAnimation(pool, finalLayout);
-            }
+            // 等待所有座位全部滚动完毕并落锁
+            await Promise.all(rollPromises);
 
             setTimeout(() => {
                 isAnimating = false;
@@ -384,7 +381,7 @@
             }, 500);
         }
 
-        init();
+        window.onload = init;
     </script>
 </body>
 </html>
