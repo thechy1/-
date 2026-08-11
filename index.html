@@ -369,7 +369,7 @@ function rollSeat(p, finalNum, totalDuration, getPool, onLock) {
                 rollPromises.push(pPromise);
 
                 // 间隔 100 毫秒启动下一个格子，产生从中心向外扩散的波浪视觉
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 350));
             }
 
             // 等待所有座位全部滚动完毕并落锁
